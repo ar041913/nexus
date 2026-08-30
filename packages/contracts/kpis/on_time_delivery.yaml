@@ -1,0 +1,43 @@
+id: on_time_delivery
+version: "1.0.0"
+display_name: On-Time Delivery Rate
+description: >
+  Percentage of fulfilled shipments delivered within the channel-specific
+  promised delivery standard. Computed from order ship dates vs. order dates.
+owner: ops
+unit: pct
+direction: higher_is_better
+grain:
+  supported: [day, week, month, region, channel]
+  default: week
+formula_type: sql
+sql_template: packages/contracts/kpis/sql/on_time_delivery.sql
+dependencies: [fact_fulfillment_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+  - name: region
+    type: string
+    required: false
+    default: null
+materiality:
+  pct_change_threshold: 3.0
+  min_absolute_change: 2.0
+  min_absolute_change_unit: pct_points
+freshness_sla_hours: 36
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.010
+lineage:
+  sources: [sales_warehouse]
+  transforms: [RECON-SKU-MAP, RECON-DATE-ALIGN, RECON-DEDUP, RECON-OTD]
+decomposition:
+  relationship: null
+  children: []
+access:
+  personas: [cfo, analyst, supply_chain_manager]
+  field_masking: {}

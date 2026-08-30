@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nexus.ai/schemas/kpi_contract.json",
+  "title": "NEXUS KPI Semantic Contract",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "display_name",
+    "description",
+    "owner",
+    "unit",
+    "direction",
+    "grain",
+    "formula_type",
+    "dependencies",
+    "inputs",
+    "materiality",
+    "freshness_sla_hours",
+    "quality_rules",
+    "lineage",
+    "access"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "display_name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "enum": ["finance", "ops", "marketing"] },
+    "unit": { "type": "string", "enum": ["usd", "units", "pct", "rate", "count"] },
+    "direction": { "type": "string", "enum": ["higher_is_better", "lower_is_better"] },
+    "grain": {
+      "type": "object",
+      "required": ["supported", "default"],
+      "properties": {
+        "supported": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "default": { "type": "string" }
+      }
+    },
+    "formula_type": { "type": "string", "enum": ["sql", "derived"] },
+    "sql_template": { "type": "string" },
+    "derived_from": {
+      "type": "object",
+      "required": ["numerator_kpi", "denominator_kpi", "operation"],
+      "properties": {
+        "numerator_kpi": { "type": "string" },
+        "denominator_kpi": { "type": "string" },
+        "operation": { "type": "string", "enum": ["divide", "subtract", "ratio"] }
+      }
+    },
+    "dependencies": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "required": { "type": "boolean" },
+          "default": {}
+        }
+      }
+    },
+    "materiality": {
+      "type": "object",
+      "required": ["pct_change_threshold", "min_absolute_change", "min_absolute_change_unit"],
+      "properties": {
+        "pct_change_threshold": { "type": "number" },
+        "min_absolute_change": { "type": "number" },
+        "min_absolute_change_unit": { "type": "string" }
+      }
+    },
+    "freshness_sla_hours": { "type": "number" },
+    "quality_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "threshold"],
+        "properties": {
+          "rule": { "type": "string" },
+          "threshold": { "type": "number" }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "required": ["sources", "transforms"],
+      "properties": {
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "transforms": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "decomposition": {
+      "type": "object",
+      "properties": {
+        "relationship": { "type": ["string", "null"] },
+        "children": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "access": {
+      "type": "object",
+      "required": ["personas"],
+      "properties": {
+        "personas": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "field_masking": { "type": "object" }
+      }
+    }
+  }
+}

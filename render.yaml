@@ -1,0 +1,34 @@
+services:
+  # ========================================
+  # NEXUS.ai Backend API (FastAPI)
+  # ========================================
+  - type: web
+    name: nexus-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn apps.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+    healthCheckPath: /health
+
+  # ========================================
+  # NEXUS.ai Frontend (Next.js)
+  # ========================================
+  - type: web
+    name: nexus-web
+    runtime: node
+    plan: free
+    rootDir: apps/web
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

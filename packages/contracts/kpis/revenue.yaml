@@ -1,0 +1,53 @@
+id: revenue
+version: "1.0.0"
+display_name: Net Revenue
+description: >
+  Sum of net sales revenue after discounts across all channels and regions.
+  Excludes returns. Source of truth is the sales warehouse fact table.
+owner: finance
+unit: usd
+direction: higher_is_better
+grain:
+  supported: [day, week, month, region, channel, category, sku]
+  default: day
+formula_type: sql
+sql_template: packages/contracts/kpis/sql/revenue.sql
+dependencies: [fact_sales_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+  - name: grain
+    type: enum
+    required: false
+    default: day
+  - name: region
+    type: string
+    required: false
+    default: null
+  - name: channel
+    type: string
+    required: false
+    default: null
+materiality:
+  pct_change_threshold: 5.0
+  min_absolute_change: 50000
+  min_absolute_change_unit: usd
+freshness_sla_hours: 36
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.015
+  - rule: max_duplicate_rate
+    threshold: 0.005
+lineage:
+  sources: [sales_warehouse]
+  transforms: [RECON-SKU-MAP, RECON-DATE-ALIGN, RECON-DEDUP, RECON-SALES-AGG]
+decomposition:
+  relationship: multiplicative
+  children: [units_sold, average_selling_price]
+access:
+  personas: [cfo, analyst, supply_chain_manager]
+  field_masking: {}

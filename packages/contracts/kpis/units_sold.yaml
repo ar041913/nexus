@@ -1,0 +1,43 @@
+id: units_sold
+version: "1.0.0"
+display_name: Units Sold
+description: Total units sold net of returns, aggregated from order lines.
+owner: ops
+unit: units
+direction: higher_is_better
+grain:
+  supported: [day, week, month, region, channel, category, sku]
+  default: day
+formula_type: sql
+sql_template: packages/contracts/kpis/sql/units_sold.sql
+dependencies: [fact_sales_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+  - name: grain
+    type: enum
+    required: false
+    default: day
+materiality:
+  pct_change_threshold: 5.0
+  min_absolute_change: 1000
+  min_absolute_change_unit: units
+freshness_sla_hours: 36
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.005
+  - rule: max_duplicate_rate
+    threshold: 0.005
+lineage:
+  sources: [sales_warehouse]
+  transforms: [RECON-SKU-MAP, RECON-DATE-ALIGN, RECON-DEDUP, RECON-SALES-AGG]
+decomposition:
+  relationship: null
+  children: []
+access:
+  personas: [cfo, analyst, supply_chain_manager]
+  field_masking: {}

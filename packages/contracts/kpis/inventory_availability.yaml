@@ -1,0 +1,46 @@
+id: inventory_availability
+version: "1.0.0"
+display_name: Inventory Availability (Fill Rate)
+description: >
+  Revenue-weighted average fill rate across all active SKUs and distribution centres.
+  Fill rate = available units / (available + unfilled demand). NULL where demand history
+  is insufficient; these are excluded from the weighted average.
+owner: ops
+unit: pct
+direction: higher_is_better
+grain:
+  supported: [day, week, sku, dc, region]
+  default: day
+formula_type: sql
+sql_template: packages/contracts/kpis/sql/inventory_availability.sql
+dependencies: [fact_inventory_daily, fact_sales_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+  - name: weight_by
+    type: enum
+    required: false
+    default: revenue
+materiality:
+  pct_change_threshold: 3.0
+  min_absolute_change: 2.0
+  min_absolute_change_unit: pct_points
+freshness_sla_hours: 12
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.050
+  - rule: max_orphan_rate
+    threshold: 0.020
+lineage:
+  sources: [inventory_system]
+  transforms: [RECON-SKU-MAP, RECON-DATE-ALIGN, RECON-INV-DEDUP]
+decomposition:
+  relationship: null
+  children: []
+access:
+  personas: [cfo, analyst, supply_chain_manager]
+  field_masking: {}

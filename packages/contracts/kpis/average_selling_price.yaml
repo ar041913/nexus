@@ -1,0 +1,42 @@
+id: average_selling_price
+version: "1.0.0"
+display_name: Average Selling Price
+description: >
+  Net revenue divided by units sold. Derived KPI; not read from a separate table.
+  Sensitive to mix shifts across SKU and channel.
+owner: finance
+unit: usd
+direction: higher_is_better
+grain:
+  supported: [day, week, month, region, channel, category]
+  default: week
+formula_type: derived
+derived_from:
+  numerator_kpi: revenue
+  denominator_kpi: units_sold
+  operation: divide
+dependencies: [fact_sales_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+materiality:
+  pct_change_threshold: 3.0
+  min_absolute_change: 2.00
+  min_absolute_change_unit: usd
+freshness_sla_hours: 36
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.020
+lineage:
+  sources: [sales_warehouse]
+  transforms: [RECON-SALES-AGG]
+decomposition:
+  relationship: null
+  children: []
+access:
+  personas: [cfo, analyst, supply_chain_manager]
+  field_masking: {}

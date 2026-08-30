@@ -1,0 +1,47 @@
+id: marketing_spend
+version: "1.0.0"
+display_name: Marketing Spend
+description: >
+  Total USD spend across all paid marketing channels and campaigns.
+  Does not include headcount or agency fees. TV/radio spend carries a known
+  2-day reporting lag; this is documented but not imputed.
+owner: marketing
+unit: usd
+direction: lower_is_better
+grain:
+  supported: [day, week, month, channel, campaign]
+  default: week
+formula_type: sql
+sql_template: packages/contracts/kpis/sql/marketing_spend.sql
+dependencies: [fact_marketing_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+  - name: channel
+    type: string
+    required: false
+    default: null
+materiality:
+  pct_change_threshold: 10.0
+  min_absolute_change: 5000
+  min_absolute_change_unit: usd
+freshness_sla_hours: 48
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.020
+  - rule: max_orphan_rate
+    threshold: 0.010
+lineage:
+  sources: [marketing_platform]
+  transforms: [RECON-DATE-ALIGN, RECON-DEDUP, RECON-MKT-AGG]
+decomposition:
+  relationship: null
+  children: []
+access:
+  personas: [cfo, analyst]
+  field_masking:
+    supply_chain_manager: [spend_usd, attributed_revenue_usd]

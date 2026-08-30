@@ -1,0 +1,49 @@
+id: customer_complaints
+version: "1.0.0"
+display_name: Customer Complaint Rate
+description: >
+  Number of support tickets per 1,000 units sold in the same period and region.
+  Requires join between CRM and sales warehouse; subject to CRM 6-hour batch lag.
+owner: ops
+unit: rate
+direction: lower_is_better
+grain:
+  supported: [day, week, month, region, category]
+  default: week
+formula_type: sql
+sql_template: packages/contracts/kpis/sql/customer_complaints.sql
+dependencies: [fact_support_daily, fact_sales_daily]
+inputs:
+  - name: period_start
+    type: date
+    required: true
+  - name: period_end
+    type: date
+    required: true
+  - name: region
+    type: string
+    required: false
+    default: null
+  - name: category
+    type: string
+    required: false
+    default: null
+materiality:
+  pct_change_threshold: 10.0
+  min_absolute_change: 0.5
+  min_absolute_change_unit: rate
+freshness_sla_hours: 24
+quality_rules:
+  - rule: max_null_rate
+    threshold: 0.050
+  - rule: max_orphan_rate
+    threshold: 0.060
+lineage:
+  sources: [crm_support]
+  transforms: [RECON-DEDUP, RECON-DATE-ALIGN, RECON-SUPPORT-AGG]
+decomposition:
+  relationship: null
+  children: []
+access:
+  personas: [cfo, analyst, supply_chain_manager]
+  field_masking: {}

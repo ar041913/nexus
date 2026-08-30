@@ -1,0 +1,62 @@
+# NEXUS.ai Frontend (Next.js) Dockerfile
+# Multi-stage build: dependencies → build → runtime
+
+FROM node:20-alpine as dependencies
+
+WORKDIR /app
+
+COPY apps/web/package*.json ./
+
+RUN npm ci
+
+# ────────────────────────────────────────────────────────────
+# Build stage
+# ────────────────────────────────────────────────────────────
+
+FROM node:20-alpine as builder
+
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copy source
+COPY apps/web .
+
+# Build
+RUN npm run build
+
+# ────────────────────────────────────────────────────────────
+# Runtime stage
+# ────────────────────────────────────────────────────────────
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Copy dependencies
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copy build output
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Create data directory
+RUN mkdir -p data
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
+
+# Expose port
+EXPOSE 3000
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["/sbin/dumb-init", "--"]
+
+# Run application
+CMD ["node", "server.js"]
